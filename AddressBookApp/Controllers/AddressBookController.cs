@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using ModelLayer.DTO;
 
 namespace AddressBookApp.Controllers
 {
@@ -28,8 +29,9 @@ namespace AddressBookApp.Controllers
         /// Add a new contact.
         /// </summary>
         [HttpPost]
-        public ActionResult Add()
+        public ActionResult AddContact([FromBody] AddressBookDTO addContact)
         {
+
             return Ok();
         }
 
@@ -37,8 +39,9 @@ namespace AddressBookApp.Controllers
         /// Update an existing contact.
         /// </summary>
         [HttpPut("{id}")]
-        public IActionResult Update()
+        public IActionResult UpdateContactByID(int id, [FromBody] AddressBookDTO updateConntactByID)
         {
+
             return Ok();
         }
 
