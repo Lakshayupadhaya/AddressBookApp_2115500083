@@ -39,17 +39,18 @@ namespace AddressBookApp.Controllers
         /// Update an existing contact.
         /// </summary>
         [HttpPut("{id}")]
-        public IActionResult UpdateContactByID(int id, [FromBody] AddressBookDTO updateConntactByID)
+        public ActionResult UpdateContactByID(int id, [FromBody] AddressBookDTO updateConntact)
         {
 
             return Ok();
+
         }
 
         /// <summary>
         /// Delete a contact by ID.
         /// </summary>
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public ActionResult Delete(int id)
         {
             return Ok();
         }

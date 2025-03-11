@@ -10,7 +10,7 @@ namespace BusinessLayer.Service
 {
     public class AddressBookBL : IAddressBookBL
     {
-        public async AddressBookDTO UpdateContactByIDBL(int id, AddressBookDTO updateContactById)
+        public async AddressBookDTO UpdateContactByIDBL(int id, AddressBookDTO updateContact)
         {
 
         }
