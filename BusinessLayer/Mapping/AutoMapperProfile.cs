@@ -16,6 +16,8 @@ namespace BusinessLayer.Mapping
             //AutoMapping from AddressBookDto to AddressBookEntity and vice a versa
             CreateMap<AddressBookDTO, AddressBookEntity>().ReverseMap();
             CreateMap<AddressBookEntity, CreateContactDTO>();
+            CreateMap<UserRegistrationDTO, UserEntity>();
+            CreateMap<UserEntity, RegisterResponceDTO>();
         }
     }
 }
