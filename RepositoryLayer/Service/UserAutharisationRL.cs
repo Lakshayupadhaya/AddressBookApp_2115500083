@@ -65,5 +65,16 @@ namespace RepositoryLayer.Service
             }
             return (false, string.Empty);
         }
+
+        public async Task<bool> UpdateUserPassword(string email, string newPassword)
+        {
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null) return false;
+
+            //user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            user.Password = newPassword;
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
     }
 }

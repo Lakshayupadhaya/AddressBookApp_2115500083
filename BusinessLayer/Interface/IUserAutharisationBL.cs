@@ -13,5 +13,9 @@ namespace BusinessLayer.Interface
         Responce<RegisterResponceDTO> RegisterUserBL(UserRegistrationDTO newUser);
 
         Responce<string> LoginUserBL(LoginDTO loginCrediantials);
+
+        Task<(bool Sent, bool found)> ForgotPasswordBL(string email);
+
+        Task<bool> ResetPasswordBL(string token, string newPassword);
     }
 }

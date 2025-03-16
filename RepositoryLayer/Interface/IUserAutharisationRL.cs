@@ -16,5 +16,7 @@ namespace RepositoryLayer.Interface
         //(bool found, string hashPass) GetUserCredentialsRL(string email);
 
         (bool login, string token) LoginUserRL(string email, string password);
+
+        Task<bool> UpdateUserPassword(string email, string newPassword);
     }
 }

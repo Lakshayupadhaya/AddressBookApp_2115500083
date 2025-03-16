@@ -11,6 +11,9 @@ using RepositoryLayer.Interface;
 using RepositoryLayer.Service;
 using RepositoryLayer.Helper;
 using ModelLayer;
+using System.Net.Mail;
+using Microsoft.Extensions.Configuration;
+using BusinessLayer.Email;
 
 namespace BusinessLayer.Service
 {
@@ -18,10 +21,16 @@ namespace BusinessLayer.Service
     {
         private readonly IMapper _mapper;
         private readonly IUserAutharisationRL _userAuthRL;
-        public UserAutharisationBL(IMapper mapper, IUserAutharisationRL userAuthRL) 
+        private readonly IConfiguration _config;
+        private readonly Jwt _jwt;
+        private readonly EmailHelper _email;
+        public UserAutharisationBL(IMapper mapper, IUserAutharisationRL userAuthRL, IConfiguration config, Jwt jwt, EmailHelper email) 
         {
             _mapper = mapper;
             _userAuthRL = userAuthRL;   
+            _config = config;
+            _jwt = jwt;
+            _email = email;
         }
 
 
@@ -79,5 +88,32 @@ namespace BusinessLayer.Service
             responce1.Data = "No Token Generated";
             return responce1;
         }
+
+        public async Task<(bool Sent, bool found)> ForgotPasswordBL(string email)
+        {
+            bool exists = _userAuthRL.Checkuser(email);
+            if(exists) 
+            {
+                var resetToken = _jwt.GenerateResetToken(email);
+
+                // Send email from Business Layer
+                return (await _email.SendPasswordResetEmail(email, resetToken), true);
+            }
+            return (false, false);
+            
+        }
+
+        public async Task<bool> ResetPasswordBL(string token, string newPassword)
+        {
+            var email = _jwt.ValidateResetToken(token);
+            if (email == null) return false;
+
+            string newHashPassword = PasswordHasher.HashPassword(newPassword);
+
+            return await _userAuthRL.UpdateUserPassword(email, newHashPassword);
+        }
+
+        
+
     }
 }

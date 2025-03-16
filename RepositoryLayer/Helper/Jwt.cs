@@ -175,5 +175,50 @@ namespace RepositoryLayer.Helper
                 return null; // Return null if token is invalid
             }
         }
+        public string GenerateResetToken(string email)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:ResetKey"]));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Email, email)
+            };
+
+            var token = new JwtSecurityToken(
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(15),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string ValidateResetToken(string token)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.UTF8.GetBytes(_config["Jwt:ResetKey"]);
+
+                var validationParams = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true
+                };
+
+                var principal = tokenHandler.ValidateToken(token, validationParams, out _);
+                var emailClaim = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+
+                return emailClaim?.Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }

@@ -13,6 +13,7 @@ using RepositoryLayer.Helper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using BusinessLayer.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,7 @@ builder.Services.AddScoped<IAddressBookRL, AddressBookRL>();
 builder.Services.AddScoped<IUserAutharisationBL, UserAutharisationBL>();
 builder.Services.AddScoped<IUserAutharisationRL, UserAutharisationRL>();
 builder.Services.AddScoped<Jwt>();
+builder.Services.AddScoped<EmailHelper>();
 
 //Adding authentication
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer
