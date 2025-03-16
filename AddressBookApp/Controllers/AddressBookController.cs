@@ -26,7 +26,7 @@ namespace AddressBookApp.Controllers
             if (autharised)
             {
                 (List<AddressBookEntity> entities, bool authorise) = _addressBookBL.GetAllContactsBL(token);
-                if (authorise) //Hamdles the slight variation of token expiration
+                if (authorise) //Handles the slight variation of token expiration
                 {
                     if (entities.Count == 0)
                     {

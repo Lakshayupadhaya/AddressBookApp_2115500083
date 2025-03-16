@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using AutoMapper;
 using BusinessLayer.Interface;
 using ModelLayer.DTO;
@@ -17,32 +14,66 @@ namespace BusinessLayer.Service
         private readonly IMapper _mapper;
         private readonly IAddressBookRL _addressBookRL;
         private readonly Jwt _jwt;
-        public AddressBookBL(IMapper mapper, IAddressBookRL addressBookRL, Jwt jwt) 
+        private readonly IRedisCacheService _redisCache;
+
+        public AddressBookBL(IMapper mapper, IAddressBookRL addressBookRL, Jwt jwt, IRedisCacheService redisCache)
         {
             _mapper = mapper;
             _addressBookRL = addressBookRL;
             _jwt = jwt;
+            _redisCache = redisCache;
         }
 
-        public (List<AddressBookEntity>, bool authorised) GetAllContactsBL(string token) 
+        // ✅ GET ALL CONTACTS with Redis Caching
+        public (List<AddressBookEntity>, bool authorised) GetAllContactsBL(string token)
         {
             var result = _jwt.GetRoleAndUserId(token);
-            if(result == null) 
+            if (result == null)
             {
                 return (new List<AddressBookEntity>(), false);
             }
-            (string role, int userId) = result.Value;
 
-            return (_addressBookRL.GetAllContactsRL(role, userId), true);
+            (string role, int userId) = result.Value;
+            string cacheKey = $"Contacts_{userId}";
+
+            // Check Redis Cache first
+            var cachedData = _redisCache.GetData<List<AddressBookEntity>>(cacheKey);
+            if (cachedData != null)
+            {
+                return (cachedData, true);
+            }
+
+            // If not found in cache, fetch from DB
+            var contacts = _addressBookRL.GetAllContactsRL(role, userId);
+
+            // Store in Redis with expiration time of 10 minutes
+            _redisCache.SetData(cacheKey, contacts, TimeSpan.FromMinutes(10));
+
+            return (contacts, true);
         }
 
+        // ✅ GET CONTACT BY ID with Redis Caching
         public AddressBookDTO GetContactByIDBL(int id)
         {
+            string cacheKey = $"Contact_{id}";
+
+            // Check if data exists in cache
+            var cachedData = _redisCache.GetData<AddressBookEntity>(cacheKey);
+            if (cachedData != null)
+            {
+                return _mapper.Map<AddressBookDTO>(cachedData);
+            }
+
+            // If cache is empty, fetch from database
             AddressBookEntity addressBookEntity = _addressBookRL.GetContactByIDRL(id);
+
+            // Store in Redis with expiration time of 10 minutes
+            _redisCache.SetData(cacheKey, addressBookEntity, TimeSpan.FromMinutes(10));
 
             return _mapper.Map<AddressBookDTO>(addressBookEntity);
         }
-        
+
+        // ✅ ADD CONTACT: Clears Cache on Insert
         public CreateContactDTO AddContactBL(AddressBookDTO createContact, string token)
         {
             AddressBookEntity addressBookEntity = _mapper.Map<AddressBookEntity>(createContact);
@@ -53,29 +84,42 @@ namespace BusinessLayer.Service
 
             AddressBookEntity createdEntity = _addressBookRL.AddContactRL(addressBookEntity);
 
+            // Remove old cache for this user
+            _redisCache.RemoveData($"Contacts_{userId}");
+
             return _mapper.Map<CreateContactDTO>(createdEntity);
         }
 
+        // ✅ UPDATE CONTACT: Clears Cache on Update
         public AddressBookDTO UpdateContactByIDBL(int id, AddressBookDTO updateContact)
         {
             AddressBookEntity addressBookEntity = _mapper.Map<AddressBookEntity>(updateContact);
 
-            AddressBookEntity UpdatedEntity = _addressBookRL.UpdateContactByID(id, addressBookEntity);
+            AddressBookEntity updatedEntity = _addressBookRL.UpdateContactByID(id, addressBookEntity);
 
-            return _mapper.Map<AddressBookDTO>(UpdatedEntity);
+            // Remove old cache
+            _redisCache.RemoveData($"Contacts_{updatedEntity.UserId}");
+            _redisCache.RemoveData($"Contact_{id}");
+
+            return _mapper.Map<AddressBookDTO>(updatedEntity);
         }
 
-        public AddressBookDTO DeleteContactByIDBL(int id) 
+        // ✅ DELETE CONTACT: Clears Cache on Delete
+        public AddressBookDTO DeleteContactByIDBL(int id)
         {
             AddressBookEntity deletedEntity = _addressBookRL.DeleteContactByID(id);
 
-            return _mapper.Map<AddressBookDTO>(deletedEntity);
+            // Remove cache
+            _redisCache.RemoveData($"Contacts_{deletedEntity.UserId}");
+            _redisCache.RemoveData($"Contact_{id}");
 
+            return _mapper.Map<AddressBookDTO>(deletedEntity);
         }
 
-        public bool AuthariseToken(string token) 
+        // ✅ TOKEN AUTHORIZATION
+        public bool AuthariseToken(string token)
         {
-            return _jwt.ValidateToken(token); 
+            return _jwt.ValidateToken(token);
         }
 
         public (bool authorised, bool found) AuthariseToken(string token, int id)

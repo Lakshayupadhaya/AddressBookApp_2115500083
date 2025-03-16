@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using BusinessLayer.Email;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,23 @@ builder.Services.AddSingleton(mapper);
 var connectionString = builder.Configuration.GetConnectionString("SqlConnection");
 builder.Services.AddDbContext<ApplicationDBContext>(options =>
     options.UseSqlServer(connectionString));
+//adding Reddis Caching
+var redisConnection = builder.Configuration["Redis:ConnectionString"];
+var redis = ConnectionMultiplexer.Connect(new ConfigurationOptions
+{
+    EndPoints = { "localhost:6379" },
+    AbortOnConnectFail = false,
+    ConnectTimeout = 15000,   // Increased connection timeout
+    SyncTimeout = 10000,      // Increased synchronous timeout
+    AsyncTimeout = 10000,
+    KeepAlive = 180           // Keep connection alive
+});
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
+//builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(
+//    builder.Configuration["Redis:ConnectionString"]));
+//builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 
 var app = builder.Build();
 

@@ -166,7 +166,7 @@ namespace RepositoryLayer.Helper
                 var roleClaim = principal.FindFirst("Role");
                 string role = roleClaim.Value;
                 var userIdClaim = principal.FindFirst("UserId");
-                int userId = int.Parse(roleClaim.Value);
+                int userId = int.Parse(userIdClaim.Value);
 
                 return (role, userId);
             }
