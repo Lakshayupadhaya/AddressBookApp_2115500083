@@ -7,6 +7,7 @@ using AutoMapper;
 using BusinessLayer.Interface;
 using ModelLayer.DTO;
 using RepositoryLayer.Entity;
+using RepositoryLayer.Helper;
 using RepositoryLayer.Interface;
 
 namespace BusinessLayer.Service
@@ -15,15 +16,24 @@ namespace BusinessLayer.Service
     {
         private readonly IMapper _mapper;
         private readonly IAddressBookRL _addressBookRL;
-        public AddressBookBL(IMapper mapper, IAddressBookRL addressBookRL) 
+        private readonly Jwt _jwt;
+        public AddressBookBL(IMapper mapper, IAddressBookRL addressBookRL, Jwt jwt) 
         {
             _mapper = mapper;
             _addressBookRL = addressBookRL;
+            _jwt = jwt;
         }
 
-        public List<AddressBookEntity> GetAllContactsBL() 
+        public (List<AddressBookEntity>, bool authorised) GetAllContactsBL(string token) 
         {
-            return _addressBookRL.GetAllContactsRL();
+            var result = _jwt.GetRoleAndUserId(token);
+            if(result == null) 
+            {
+                return (new List<AddressBookEntity>(), false);
+            }
+            (string role, int userId) = result.Value;
+
+            return (_addressBookRL.GetAllContactsRL(role, userId), true);
         }
 
         public AddressBookDTO GetContactByIDBL(int id)
@@ -33,9 +43,13 @@ namespace BusinessLayer.Service
             return _mapper.Map<AddressBookDTO>(addressBookEntity);
         }
         
-        public CreateContactDTO AddContactBL(AddressBookDTO createContact)
+        public CreateContactDTO AddContactBL(AddressBookDTO createContact, string token)
         {
             AddressBookEntity addressBookEntity = _mapper.Map<AddressBookEntity>(createContact);
+
+            var userClaims = _jwt.GetClaimsFromToken(token);
+            int userId = _jwt.GetUserIdFromClaims(userClaims);
+            addressBookEntity.UserId = userId;
 
             AddressBookEntity createdEntity = _addressBookRL.AddContactRL(addressBookEntity);
 
@@ -57,95 +71,16 @@ namespace BusinessLayer.Service
 
             return _mapper.Map<AddressBookDTO>(deletedEntity);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        }
+
+        public bool AuthariseToken(string token) 
+        {
+            return _jwt.ValidateToken(token); 
+        }
+
+        public (bool authorised, bool found) AuthariseToken(string token, int id)
+        {
+            return _jwt.ValidateToken(token, id);
         }
     }
 }

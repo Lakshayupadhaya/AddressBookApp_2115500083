@@ -10,7 +10,7 @@ namespace RepositoryLayer.Interface
     public interface IAddressBookRL
     {
 
-        List<AddressBookEntity> GetAllContactsRL();
+        List<AddressBookEntity> GetAllContactsRL(string role, int userId);
 
         AddressBookEntity GetContactByIDRL(int id);
 
@@ -19,5 +19,7 @@ namespace RepositoryLayer.Interface
         AddressBookEntity AddContactRL(AddressBookEntity addressBookEntity);
 
         AddressBookEntity DeleteContactByID(int id);
+
+        (bool authorised, bool found) AuthoriseAndFindRL(int userId, int id);
     }
 }

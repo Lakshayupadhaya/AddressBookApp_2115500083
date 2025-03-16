@@ -18,7 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IAddressBookBL, AddressBookBL>();
 builder.Services.AddScoped<IAddressBookRL, AddressBookRL>();
-//builder.Services.AddSingleton<Jwt>();
+builder.Services.AddScoped<IUserAutharisationBL, UserAutharisationBL>();
+builder.Services.AddScoped<IUserAutharisationRL, UserAutharisationRL>();
+builder.Services.AddScoped<Jwt>();
 
 //Adding authentication
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer

@@ -19,10 +19,20 @@ namespace RepositoryLayer.Service
         }
 
 
-        public List<AddressBookEntity> GetAllContactsRL() 
+        public List<AddressBookEntity> GetAllContactsRL(string role, int userId) 
         {
-            var Entities = _dbContext.AddressBook.AsNoTracking().ToList();
-            return Entities;
+            if(role == "Admin") 
+            {
+                var Entities = _dbContext.AddressBook.AsNoTracking().ToList();
+                return Entities;
+            }
+            var entities = _dbContext.AddressBook
+            .AsNoTracking()
+            .Where(e => e.UserId == userId)  // Filter for specific UserId
+            .ToList();
+            return entities;
+
+
         }
 
 
@@ -67,6 +77,20 @@ namespace RepositoryLayer.Service
             _dbContext.AddressBook.Remove(entity);
             _dbContext.SaveChanges();
             return entity;
+        }
+
+        public (bool authorised,bool found) AuthoriseAndFindRL(int userId, int id) 
+        {
+            var addressBookEntity = _dbContext.AddressBook.FirstOrDefault(e => e.Id == id);
+            if(addressBookEntity != null) 
+            {
+                if(addressBookEntity.UserId == userId) 
+                {
+                    return (true, true);
+                }
+                return (false, true);
+            }
+            return (true, false);
         }
     }
 }

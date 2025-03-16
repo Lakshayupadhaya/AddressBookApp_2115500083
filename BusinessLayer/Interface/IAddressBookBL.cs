@@ -11,15 +11,18 @@ namespace BusinessLayer.Interface
     public interface IAddressBookBL
     {
 
-        List<AddressBookEntity> GetAllContactsBL();
+        (List<AddressBookEntity>, bool authorised) GetAllContactsBL(string token);
 
         AddressBookDTO GetContactByIDBL(int id);
 
         AddressBookDTO UpdateContactByIDBL(int id, AddressBookDTO updateContact);
 
-        CreateContactDTO AddContactBL(AddressBookDTO createContact);
-
+        CreateContactDTO AddContactBL(AddressBookDTO createContact, string token);
 
         AddressBookDTO DeleteContactByIDBL(int id);
+
+        bool AuthariseToken(string token);
+
+        (bool authorised, bool found) AuthariseToken(string token, int id);
     }
 }
