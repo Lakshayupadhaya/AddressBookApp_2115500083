@@ -14,6 +14,8 @@ using ModelLayer;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
 using BusinessLayer.Email;
+using RabbitMQ.Client;
+using BusinessLayer.RabbitMQ;
 
 namespace BusinessLayer.Service
 {
@@ -24,13 +26,15 @@ namespace BusinessLayer.Service
         private readonly IConfiguration _config;
         private readonly Jwt _jwt;
         private readonly EmailHelper _email;
-        public UserAutharisationBL(IMapper mapper, IUserAutharisationRL userAuthRL, IConfiguration config, Jwt jwt, EmailHelper email) 
+        private readonly Producer _rabitMQProducer;
+        public UserAutharisationBL(IMapper mapper, IUserAutharisationRL userAuthRL, IConfiguration config, Jwt jwt, EmailHelper email, Producer rabitMQProducer) 
         {
             _mapper = mapper;
             _userAuthRL = userAuthRL;   
             _config = config;
             _jwt = jwt;
             _email = email;
+            _rabitMQProducer = rabitMQProducer;
         }
 
 
@@ -92,15 +96,18 @@ namespace BusinessLayer.Service
         public async Task<(bool Sent, bool found)> ForgotPasswordBL(string email)
         {
             bool exists = _userAuthRL.Checkuser(email);
-            if(exists) 
+            if (!exists)
             {
-                var resetToken = _jwt.GenerateResetToken(email);
-
-                // Send email from Business Layer
-                return (await _email.SendPasswordResetEmail(email, resetToken), true);
+                return (false, false);
             }
-            return (false, false);
-            
+
+            var resetToken = _jwt.GenerateResetToken(email);
+
+            // Publish message to RabbitMQ
+            var message = new { Email = email, ResetToken = resetToken };
+            _rabitMQProducer.PublishMessage(message);
+
+            return (true, true); // Assume success (actual sending happens in Consumer)
         }
 
         public async Task<bool> ResetPasswordBL(string token, string newPassword)
